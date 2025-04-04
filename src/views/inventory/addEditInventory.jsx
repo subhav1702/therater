@@ -148,22 +148,6 @@ function AddEditInventory() {
                                         </div>
                                     </div>
 
-                                    {/* Quantity Input */}
-                                    <div className="px-4 w-full lg:w-6/12">
-                                        <div className="mb-3 relative w-full">
-                                            <label className="text-blueGray-600 mb-2 block text-lg font-bold">
-                                                Quantity
-                                            </label>
-                                            <Input
-                                                type="text"
-                                                name="quantity"
-                                                className="px-3 py-2"
-                                                value={inventoryData.quantity}
-                                                onChange={handleInputChange}
-                                            />
-                                        </div>
-                                    </div>
-
                                     {/* Price Input */}
                                     <div className="px-4 w-full lg:w-6/12">
                                         <div className="mb-3 relative w-full">

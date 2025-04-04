@@ -75,6 +75,7 @@ const routes = [
         component: AddEditInventory,
         isPublic: false,
     },
+    
     {
         id: 6,
         path: '/inventory/edit-inventory/:eid',

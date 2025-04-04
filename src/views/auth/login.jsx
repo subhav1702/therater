@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { LoaderCircle, Eye, EyeOff, AtSign } from 'lucide-react';
 import secureLocalStorage from "react-secure-storage";
 //import backgroundImage from "@/assets/images/top-view-weights-floor.jpg"
+import axios from "axios";
 
 function Login() {
 
@@ -25,8 +26,20 @@ function Login() {
         e.preventDefault();
         let isValid = validateInputs();
         if (isValid) {
-            localStorage.setItem('userData', "data")
-            history.push("/order")
+            axios.post(`${import.meta.env.VITE_BACKEND_URL}/auth/login`, {
+                email: email,
+                password: password
+            })
+            .then(function (response) {
+                console.log(response);
+                secureLocalStorage.setItem('userData', JSON.stringify(response.data.user))   
+                secureLocalStorage.setItem('jwt', response.data.access_token)            
+                history.push("/order")
+            })
+            .catch(function (error) {
+                console.log(error);
+            });
+           
         }
     }
 

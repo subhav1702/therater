@@ -1,3 +1,6 @@
+import secureLocalStorage from "react-secure-storage";
+
 export const logedInUser = () => {
-  return localStorage.getItem("userData");
+  return secureLocalStorage.getItem("userData");
 };
+

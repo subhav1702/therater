@@ -1,46 +1,92 @@
-﻿import { useState, useEffect } from "react";
+﻿import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import ReactTable from "../../components/reactTable";
-import { useHistory } from 'react-router-dom';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdownMenu";
-import { DotsVerticalIcon } from "@radix-ui/react-icons";
-import InfiniteScroll from "react-infinite-scroll-component";
 import { LoaderCircle } from 'lucide-react';
-//import helper from '@/services/helper';
+import QRCode from "react-qr-code";
+import html2canvas from "html2canvas"; 
+import { Input } from "@/components/ui/input";
+import { jsPDF } from "jspdf";
+import { useHistory } from "react-router-dom/cjs/react-router-dom.min";
 
 function QrCode() {
-    const history = useHistory();
-    const [qrList, setQrList] = useState([]);
-    const [hasMore, setHasMore] = useState(true);
-    const [lastElement, setLastElement] = useState(undefined);
+    let history = useHistory();
+    const [screenNumber, setScreenNumber] = useState('');
+    const [rowNumber, setRowNumber] = useState('');
+    const [seatNumber, setSeatNumber] = useState('');
+    const [qrValue, setQrValue] = useState('');
+    const [saveLoading, setSaveLoading] = useState(false);
     const [userType, setUserType] = useState();
+    const qrCodeRef = useRef(null);
 
-    useEffect(() => {
-        //getProductData()
-        const qrList = [
-            {
-                itemId: 1,
-                screenNumber: "Screen 1",
-                seatNumber: "A1",
-            },
-            {
-                itemId: 2,
-                screenNumber: "Screen 1",
-                seatNumber: "A2",
-            },
-            {
-                itemId: 3,
-                screenNumber: "Screen 2",
-                seatNumber: "B1",
-            },
-        ];
-        setQrList(qrList)
-    }, []);
+    const handleScreenNumberChange = (e) => {
+        const value = e.target.value;
+        setScreenNumber(value);
+        generateQrCode(value, rowNumber, seatNumber);
+    };
+
+    const handleRowNumberChange = (e) => {
+        const value = e.target.value;
+        setRowNumber(value);
+        generateQrCode(screenNumber, value, seatNumber);
+    };
+
+    const handleSeatNumberChange = (e) => {
+        const value = e.target.value;
+        setSeatNumber(value);
+        generateQrCode(screenNumber, rowNumber, value);
+    };
+
+    const generateQrCode = (screen, row, seat) => {
+        if (screen && row && seat) {
+            const qrData = `https://www.google.com/?screen=${screen}&row=${row}&seat=${seat}`;
+            setQrValue(qrData);
+        } else {
+            setQrValue('');
+        }
+    };
+
+    const downloadQRCode = () => {
+        if (!qrCodeRef.current) return;
+        
+        setSaveLoading(true);
+        
+        html2canvas(qrCodeRef.current, {
+            scale: 2, // Higher quality
+            backgroundColor: '#FFFFFF' // White background for PDF
+        })
+        .then((canvas) => {
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm'
+            });
+
+            // Calculate dimensions to center the QR code
+            const pageWidth = pdf.internal.pageSize.getWidth();
+            const pageHeight = pdf.internal.pageSize.getHeight();
+            const imgWidth = 50; // width of the image in mm
+            const imgHeight = 50; // height of the image in mm
+            
+            // Center the image on the page
+            const x = (pageWidth - imgWidth) / 2;
+            const y = (pageHeight - imgHeight) / 2;
+            
+            // Add QR code image
+            pdf.addImage(imgData, 'PNG', x, y, imgWidth, imgHeight);
+            
+            // Add text below the QR code
+            pdf.setFontSize(12);
+            pdf.text(`Screen: ${screenNumber}, Row: ${rowNumber}, Seat: ${seatNumber}`, pageWidth / 2, y + imgHeight + 10, { align: 'center' });
+            
+            // Save the PDF
+            pdf.save(`QRCode_${screenNumber}_${rowNumber}_${seatNumber}.pdf`);
+        })
+        .catch((error) => {
+            console.error("Error generating PDF:", error);
+        })
+        .finally(() => {
+            setSaveLoading(false);
+        });
+    };
 
     return (
         <>
@@ -50,13 +96,6 @@ function QrCode() {
                     <div className="flex gap-2">
                         <Button
                             variant="black"
-                            onClick={() => history.push('/qr/create-qr')}
-                            className="w-24"
-                        >
-                            Create
-                        </Button>
-                        <Button
-                            variant="black"
                             onClick={() => history.push('/qr/create-blk-qr')}
                             className="w-34"
                         >
@@ -64,62 +103,105 @@ function QrCode() {
                         </Button>
                     </div>
                 </div>
-                {/* <InfiniteScroll className="mt-4"
-                    style={{ overflow: 'hidden' }}
-                    dataLength={productsList?.length}
-                    next={next}
-                    hasMore={hasMore}
-                    loader={
-                        <div className="flex justify-center"><LoaderCircle className="mt-5 h-6 w-6 animate-spin" /></div>
-                    }
-                    scrollThreshold="100px"
-                    endMessage={productsList && productsList.length > 0 ?
-                        ((productsList.length > 10) && <p className="text-center">
-                            <b>Yay! You have seen it all</b>
-                        </p>) :
-                        (<div className="flex justify-center p-5">
-                            <span>No results</span>
-                        </div>)
-                    }
-                > */}
-                <ReactTable
-                    data={qrList} // Updated data source for inventory
-                    columns={[
-                        {
-                            Header: "SCREEN NUMBER",
-                            accessor: "screenNumber", // Accessor for the screen number
-                        },
-                        {
-                            Header: "SEAT NUMBER",
-                            accessor: "seatNumber", // Accessor for the seat number
-                        },
-                        {
-                            id: "actions",
-                            enableHiding: false,
-                            Header: "ACTION",
-                            Cell: ({ row }) => {
-                                const data = row.original;
-                                return (
-                                    <DropdownMenu modal={false}>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" className="h-8 w-8 p-0">
-                                                <DotsVerticalIcon className="h-4 w-4" />
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
-                                            <DropdownMenuItem
-                                                onClick={() => removeItem(data.itemId)}
-                                            >
-                                                Remove
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                );
-                            },
-                        },
-                    ]}
-                />
-                {/* </InfiniteScroll> */}
+                <section>
+                    <div className="mt-6 mx-auto w-full">
+                        <div className="min-w-0 mb-6 bg-blueGray-100 bg-white relative flex w-full flex-col break-words rounded-lg border-0 shadow-lg">
+                            <div className="px-4 py-6 pt-6 flex-auto lg:px-6">
+                                <div className="flex flex-wrap">
+                                    {/* Screen Number Input */}
+                                    <div className="px-4 w-full lg:w-4/12">
+                                        <div className="mb-3 relative w-full">
+                                            <label className="text-blueGray-600 mb-2 block text-lg font-bold">
+                                                Screen Number
+                                            </label>
+                                            <Input
+                                                type="text"
+                                                className="px-3 py-2"
+                                                value={screenNumber}
+                                                onChange={handleScreenNumberChange}
+                                                placeholder="Enter screen number"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Row Number Input */}
+                                    <div className="px-4 w-full lg:w-4/12">
+                                        <div className="mb-3 relative w-full">
+                                            <label className="text-blueGray-600 mb-2 block text-lg font-bold">
+                                                Row Number
+                                            </label>
+                                            <Input
+                                                type="text"
+                                                className="px-3 py-2"
+                                                value={rowNumber}
+                                                onChange={handleRowNumberChange}
+                                                placeholder="Enter row number"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Seat Number Input */}
+                                    <div className="px-4 w-full lg:w-4/12">
+                                        <div className="mb-3 relative w-full">
+                                            <label className="text-blueGray-600 mb-2 block text-lg font-bold">
+                                                Seat Number
+                                            </label>
+                                            <Input
+                                                type="text"
+                                                className="px-3 py-2"
+                                                value={seatNumber}
+                                                onChange={handleSeatNumberChange}
+                                                placeholder="Enter seat number"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* QR Code Display */}
+                                    {qrValue && (
+                                        <div className="px-4 w-full mt-6">
+                                            <div className="mb-3 relative w-full">
+                                                <label className="text-blueGray-600 mb-2 block text-lg font-bold">
+                                                    Generated QR Code
+                                                </label>
+                                                <div className="flex justify-center">
+                                                    <div ref={qrCodeRef} className="p-2 bg-white">
+                                                        <QRCode 
+                                                            value={qrValue} 
+                                                            size={128}
+                                                            bgColor="#FFFFFF"
+                                                            fgColor="#000000"
+                                                            level="H" // Higher error correction
+                                                        />
+                                                    </div>
+                                                </div>
+                                                {/* Download Button */}
+                                                <div className="flex justify-center mt-4">
+                                                    <Button
+                                                        type="button"
+                                                        variant="black"
+                                                        className="w-44"
+                                                        onClick={downloadQRCode}
+                                                        disabled={saveLoading}
+                                                    >
+                                                        {saveLoading ? (
+                                                            <>
+                                                                <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                                                                Generating...
+                                                            </>
+                                                        ) : 'Download QR Code'}
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Save and Cancel Buttons */}
+                              
+                            </div>
+                        </div>
+                    </div>
+                </section>
             </div>
         </>
     );

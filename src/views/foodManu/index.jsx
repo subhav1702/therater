@@ -38,13 +38,6 @@ const FoodOrderingApp = () => {
 
     const [itemQuantities, setItemQuantities] = useState({});
 
-    // Handle adding an item
-    const handleAddItem = (itemId) => {
-        setItemQuantities({
-            ...itemQuantities,
-            [itemId]: 1
-        });
-    };
 
     // Handle increasing quantity
     const handleIncreaseQuantity = (itemId) => {

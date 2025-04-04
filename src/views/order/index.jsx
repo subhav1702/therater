@@ -2,16 +2,8 @@
 import { Button } from "@/components/ui/button";
 import ReactTable from "../../components/reactTable";
 import { useHistory } from 'react-router-dom';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdownMenu";
-import { DotsVerticalIcon } from "@radix-ui/react-icons";
-import InfiniteScroll from "react-infinite-scroll-component";
-import { LoaderCircle } from 'lucide-react';
-//import helper from '@/services/helper';
+import axios from "axios";
+import secureLocalStorage from "react-secure-storage";
 
 export default function order() {
     const history = useHistory();
@@ -21,39 +13,28 @@ export default function order() {
     const [userType, setUserType] = useState();
 
     useEffect(() => {
-        //getProductData()
-        const orderList = [
-            {
-                id: 1,
-                screenNumber: "Screen 1",
-                seatNumber: "A1",
-                orderItems: [
-                    { name: "Popcorn", quantity: 2 },
-                    { name: "Coke", quantity: 1 },
-                    { name: "Nachos", quantity: 1 },
-                ],
-            },
-            {
-                id: 2,
-                screenNumber: "Screen 2",
-                seatNumber: "B2",
-                orderItems: [
-                    { name: "Samosa", quantity: 3 },
-                    { name: "Pepsi", quantity: 2 },
-                ],
-            },
-            {
-                id: 3,
-                screenNumber: "Screen 3",
-                seatNumber: "C3",
-                orderItems: [
-                    { name: "Burger", quantity: 1 },
-                    { name: "Fries", quantity: 2 },
-                ],
-            },
-        ];
-        setOrderList(orderList)
+        axios.get(`${import.meta.env.VITE_BACKEND_URL}/orders`, {
+            headers: { Authorization: `bearer ${secureLocalStorage.getItem("jwt")}` }
+        })
+            .then(function (response) {
+                setOrderList(response.data)
+            })
+            .catch(function (error) {
+                console.log(error);
+            })
     }, []);
+
+    const handleOrderComplete = (orderId) => {
+        // Add your order complete logic here
+        console.log("Order completed:", orderId);
+        // You might want to make an API call to update the order status
+    };
+
+    const handleOrderReject = (orderId) => {
+        // Add your order reject logic here
+        console.log("Order rejected:", orderId);
+        // You might want to make an API call to update the order status
+    };
 
     return (
         <>
@@ -61,45 +42,29 @@ export default function order() {
                 <div className="flex justify-between items-center mb-5">
                     <h1 className="text-2xl font-bold">Order</h1>
                 </div>
-                {/* <InfiniteScroll className="mt-4"
-                    style={{ overflow: 'hidden' }}
-                    dataLength={productsList?.length}
-                    next={next}
-                    hasMore={hasMore}
-                    loader={
-                        <div className="flex justify-center"><LoaderCircle className="mt-5 h-6 w-6 animate-spin" /></div>
-                    }
-                    scrollThreshold="100px"
-                    endMessage={productsList && productsList.length > 0 ?
-                        ((productsList.length > 10) && <p className="text-center">
-                            <b>Yay! You have seen it all</b>
-                        </p>) :
-                        (<div className="flex justify-center p-5">
-                            <span>No results</span>
-                        </div>)
-                    }
-                > */}
                 <ReactTable
-                    data={orderList} // Updated data source for inventory
+                    data={orderList}
                     columns={[
                         {
                             Header: "SCREEN NUMBER",
-                            accessor: "screenNumber", // Accessor for the screen number
+                            Cell: ({ row }) => (                                
+                                <div>
+                                    {row.original.theater.screenNo}
+                                </div>
+                            ),
                         },
                         {
                             Header: "SEAT NUMBER",
-                            accessor: "seatNumber", // Accessor for the seat number
+                            Cell: ({ row }) => (                                
+                                <div>
+                                    {row.original.screen.screenNumber}
+                                </div>
+                            ),
                         },
                         {
-                            Header: "ORDER ITEMS",
-                            accessor: "orderItems", // Accessor for the order items
-                            Cell: ({ row }) => (
+                            Header: "Status",
+                            Cell: ({ row }) => (                                
                                 <div>
-                                    {row.original.orderItems.map((item, index) => (
-                                        <div key={index}>
-                                            {item.name} (Qty: {item.quantity})
-                                        </div>
-                                    ))}
                                 </div>
                             ),
                         },
@@ -109,32 +74,36 @@ export default function order() {
                             Header: "ACTION",
                             Cell: ({ row }) => {
                                 const data = row.original;
-                                console.log(data,"data")
+                               
                                 return (
-                                    <DropdownMenu modal={false}>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" className="h-8 w-8 p-0">
-                                                <DotsVerticalIcon className="h-4 w-4" />
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
-                                            <DropdownMenuItem
-                                                onClick={() => {
-                                                    history.push(`/order/view-order/${data.id}`);
-                                                }}
-                                            >
-                                                View
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
+                                    <div className="flex space-x-2">
+                                        
+                                        <Button 
+                                            variant="default"
+                                            onClick={() => handleOrderComplete(data.id)}
+                                            className="bg-green-600 hover:bg-green-700"
+                                        >
+                                            Complete
+                                        </Button>
+                                        <Button 
+                                            variant="destructive"
+                                            onClick={() => handleOrderReject(data.id)}
+                                        >
+                                            Reject
+                                        </Button>
+                                        <Button 
+                                            variant="outline"
+                                            onClick={() => history.push(`/order/view-order/${data.id}`)}
+                                        >
+                                            View
+                                        </Button>
+                                    </div>
                                 );
                             },
                         },
                     ]}
                 />
-                {/* </InfiniteScroll> */}
             </div>
         </>
     );
 }
-

@@ -22,15 +22,15 @@ function LandingLayout(props) {
 
         const isDashboard = moduleName === 'dashboard';
         const isTeamModule = moduleName === 'team';
-
-        if (userdata && userdata?.userType !== 1) {
-            if (userdata?.userType === 4 && isTeamModule) {
-                return false; 
-            }
-            return (isDashboard || (!route.isPublic && route.isInSidebar && route.isTrainers && isPermissionGranted));
-        } else {
-            return (isDashboard || (route.isAdmin && route.isInSidebar));
-        }
+        return route.isInSidebar
+        // if (userdata && userdata?.userType !== 1) {
+        //     if (userdata?.userType === 4 && isTeamModule) {
+        //         return false; 
+        //     }
+        //     return (isDashboard || (!route.isPublic && route.isInSidebar && route.isTrainers && isPermissionGranted));
+        // } else {
+        //     return (isDashboard || (route.isAdmin && route.isInSidebar));
+        // }
     });
 
     return (
